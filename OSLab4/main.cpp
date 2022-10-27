@@ -16,8 +16,11 @@ void blocksMul(const std::vector <std::vector <int>>&m1, const std::vector <std:
 	for (int i = blockI; i < std::min(blockI + blockSize,matrixSize); ++i)
 		for (int j = blockJ; j < std::min(blockJ + blockSize,matrixSize); ++j)
 			for (int k = 0; k < matrixSize; ++k)
+			{
+				g_lock.lock();
 				resM[i][j] += m1[i][k] * m2[k][j];
-			
+				g_lock.unlock();
+			}
 }
 
 void defaultMul(const std::vector <std::vector <int>>& m1, const std::vector <std::vector <int>>& m2, std::vector < std::vector <int>>& resM, int matrixSize, int blockSize)
@@ -32,11 +35,7 @@ void threadMul(const std::vector <std::vector <int>>& m1, const std::vector <std
 	std::vector<std::thread> threads;
 	for (int blockI = 0; blockI < matrixSize; blockI += blockSize)
 		for (int blockJ = 0; blockJ < matrixSize; blockJ += blockSize)
-		{
-			g_lock.lock();
 			threads.emplace_back(blocksMul, std::cref(m1), std::cref(m2), std::ref(resM), blockI, blockJ, matrixSize, blockSize);
-			g_lock.unlock();
-		}
 
 	for (auto& thrd: threads)
 		thrd.join();
@@ -71,6 +70,7 @@ void test(std::vector< std::vector<int>>& m1, std::vector< std::vector<int>>& m2
 		auto tempTime = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> tempDuration = tempTime - startTimeThread;
 		threadResults.push_back(tempDuration.count());
+		m3 = std::vector<std::vector<int>>(matrixSize, std::vector<int>(matrixSize));
 	}
 	auto endTimeThread = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> durationThread = endTimeThread - startTimeThread;
@@ -83,6 +83,7 @@ void test(std::vector< std::vector<int>>& m1, std::vector< std::vector<int>>& m2
 		auto tempTime = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> tempDuration = tempTime - startTimeSeq;
 		seqResults.push_back(tempDuration.count());
+		m3 = std::vector<std::vector<int>>(matrixSize, std::vector<int>(matrixSize));
 	}
 	auto endTimeSeq = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> durationSeq = endTimeSeq - startTimeSeq;
@@ -99,11 +100,11 @@ void test(std::vector< std::vector<int>>& m1, std::vector< std::vector<int>>& m2
 
 int main()
 {
-	int matrixSize = 300;
+	int matrixSize = 100;
 	std::vector< std::vector<int>> m1(matrixSize);
 	std::vector< std::vector<int>> m2(matrixSize);
 	std::vector< std::vector<int>> m3(matrixSize,std::vector<int>(matrixSize));
-	getMatrix(m1, "matrix1.txt");
-	getMatrix(m2, "matrix2.txt");
+	getMatrix(m1, "matrix5.txt");
+	getMatrix(m2, "matrix6.txt");
 	test(m1, m2, m3, matrixSize);
 }
